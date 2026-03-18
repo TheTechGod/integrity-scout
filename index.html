@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Integrity Scout — Job Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --crimson:      #9B1B30;
+    --crimson-dark: #6B1020;
+    --crimson-mid:  #B02235;
+    --cream:        #FAF6F0;
+    --cream-dark:   #F0E8DC;
+    --cream-border: #E0D0C0;
+    --gold:         #C9A84C;
+    --gold-light:   #E8D49A;
+    --text-dark:    #1a0a0f;
+    --text-mid:     #5a3a42;
+    --text-muted:   #9a7a82;
+    --green:        #2D7A4F;
+    --green-bg:     #E8F5EE;
+    --orange:       #C05C10;
+    --orange-bg:    #FEF0E6;
+    --blue:         #1a5fa8;
+    --blue-bg:      #E6F0FC;
+    --red:          #B71C1C;
+    --red-bg:       #FEEBE9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #1a0a0f;
+    min-height: 100vh;
+    color: var(--text-dark);
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(155,27,48,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(201,168,76,0.08) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .shell {
+    position: relative; z-index: 1;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(201,168,76,0.25);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px;
+    background: var(--crimson);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 18px rgba(155,27,48,0.45);
+  }
+  .app-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 21px; color: var(--cream); line-height: 1.1;
+  }
+  .app-sub {
+    font-size: 11px; color: var(--gold);
+    letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .week-badge {
+    padding: 7px 14px;
+    background: rgba(250,246,240,0.07);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 20px;
+    color: var(--gold); font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  .btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    border: 1px solid rgba(201,168,76,0.25);
+    background: rgba(250,246,240,0.07); color: var(--cream);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: rgba(250,246,240,0.13); }
+  .btn-primary {
+    background: var(--crimson); border-color: var(--crimson);
+    box-shadow: 0 3px 12px rgba(155,27,48,0.3);
+  }
+  .btn-primary:hover { background: var(--crimson-dark); }
+
+  /* WEEK PROGRESS CARD */
+  .week-card {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 24px;
+    flex-wrap: wrap;
+  }
+  .week-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px; color: var(--crimson-dark);
+    flex-shrink: 0;
+  }
+  .week-stats {
+    display: flex; gap: 20px; flex: 1; flex-wrap: wrap;
+  }
+  .wstat { text-align: center; }
+  .wstat-val { font-size: 28px; font-weight: 500; color: var(--crimson-dark); line-height: 1; }
+  .wstat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+  .week-progress { flex: 1; min-width: 180px; }
+  .wp-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .wp-track { height: 8px; background: var(--cream-dark); border-radius: 4px; overflow: hidden; }
+  .wp-fill { height: 100%; background: var(--crimson); border-radius: 4px; transition: width 0.6s ease; }
+  .wp-note { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+
+  /* METRIC CARDS */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .metric {
+    background: rgba(250,246,240,0.07);
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 12px; padding: 14px 16px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .metric:hover { border-color: rgba(201,168,76,0.3); }
+  .metric.active { border-color: var(--crimson); background: rgba(155,27,48,0.12); }
+  .metric-label { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .metric-val { font-size: 28px; font-weight: 500; color: var(--cream); line-height: 1; }
+  .metric-sub { font-size: 11px; color: rgba(250,246,240,0.3); margin-top: 4px; }
+
+  /* CONTROLS ROW */
+  .controls-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .search-wrap { position: relative; flex: 1; max-width: 300px; }
+  .search-input {
+    width: 100%; padding: 9px 14px 9px 36px;
+    background: rgba(250,246,240,0.07);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px; color: var(--cream); font-size: 13px;
+    font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: rgba(250,246,240,0.3); }
+  .search-input:focus { border-color: rgba(201,168,76,0.45); }
+  .search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; color: rgba(250,246,240,0.3); pointer-events: none;
+  }
+  .sort-select {
+    padding: 8px 12px;
+    background: rgba(250,246,240,0.07);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px; color: var(--cream); font-size: 13px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; outline: none;
+  }
+  .sort-select option { background: #2a0a12; }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--cream);
+    border-radius: 14px; overflow: hidden;
+  }
+  .jobs-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  .jobs-table th {
+    background: var(--crimson); color: var(--cream);
+    padding: 11px 14px; text-align: left;
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .jobs-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--cream-border);
+    color: var(--text-dark);
+    vertical-align: middle;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .jobs-table tr:last-child td { border-bottom: none; }
+  .jobs-table tr:hover td { background: #fff8f4; }
+  .col-title    { width: 22%; }
+  .col-company  { width: 17%; }
+  .col-platform { width: 13%; }
+  .col-week     { width: 13%; }
+  .col-salary   { width: 10%; }
+  .col-status   { width: 13%; }
+  .col-link     { width: 6%; }
+  .col-notes    { width: 6%; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .b-new       { background: var(--blue-bg);   color: var(--blue);   }
+  .b-applied   { background: var(--orange-bg); color: var(--orange); }
+  .b-interview { background: var(--green-bg);  color: var(--green);  }
+  .b-rejected  { background: var(--red-bg);    color: var(--red);    }
+
+  .status-select {
+    font-size: 12px; padding: 4px 8px; border-radius: 8px;
+    border: 1px solid var(--cream-border);
+    background: white; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--text-dark);
+    width: 100%;
+  }
+
+  .link-btn { color: var(--crimson); font-size: 14px; text-decoration: none; font-weight: 500; }
+  .link-btn:hover { color: var(--crimson-dark); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+  .empty-icon  { font-size: 32px; margin-bottom: 12px; }
+  .empty-sub   { font-size: 12px; margin-top: 6px; opacity: 0.7; }
+
+  /* NOTES MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--cream); border-radius: 14px;
+    padding: 22px 24px; width: 440px; max-width: 95vw;
+    transform: translateY(12px); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 15px; font-weight: 500; color: var(--crimson-dark); margin-bottom: 12px; }
+  .modal textarea {
+    width: 100%; height: 120px; padding: 10px 12px;
+    border: 1px solid var(--cream-border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-dark); resize: vertical; outline: none;
+  }
+  .modal textarea:focus { border-color: var(--crimson); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 22px; right: 22px;
+    background: var(--crimson-dark); color: var(--cream);
+    padding: 11px 18px; border-radius: 10px; font-size: 13px;
+    z-index: 200; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(70px); opacity: 0;
+    transition: all 0.22s; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* LOADING */
+  .spinner {
+    display: inline-block; width: 13px; height: 13px;
+    border: 2px solid rgba(250,246,240,0.2);
+    border-top-color: var(--cream);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 5px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .week-card { flex-direction: column; align-items: flex-start; }
+    .col-platform, .col-salary, .col-notes { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🎯</div>
+      <div>
+        <div class="app-title">Integrity Scout Engine</div>
+        <div class="app-sub">Weekly Job Dashboard</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="week-badge" id="week-badge">Week of —</div>
+      <button class="btn btn-primary" onclick="loadJobs()">
+        <span id="refresh-icon">↻</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- WEEKLY PROGRESS CARD -->
+  <div class="week-card">
+    <div>
+      <div class="week-title" id="week-title">This Week</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">Monday — Sunday</div>
+    </div>
+    <div class="week-stats">
+      <div class="wstat">
+        <div class="wstat-val" id="w-new">0</div>
+        <div class="wstat-label">New</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="w-applied">0</div>
+        <div class="wstat-label">Applied</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="w-interview">0</div>
+        <div class="wstat-label">Interviews</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="w-rejected">0</div>
+        <div class="wstat-label">Rejected</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="w-total">0</div>
+        <div class="wstat-label">Total</div>
+      </div>
+    </div>
+    <div class="week-progress">
+      <div class="wp-label">
+        <span>Weekly progress</span>
+        <span id="wp-pct">0%</span>
+      </div>
+      <div class="wp-track"><div class="wp-fill" id="wp-fill" style="width:0%"></div></div>
+      <div class="wp-note" id="wp-note">Loading this week's leads...</div>
+    </div>
+  </div>
+
+  <!-- ALL-TIME METRICS (clickable filters) -->
+  <div class="metrics">
+    <div class="metric active" onclick="filterBy('all', this)" id="m-all">
+      <div class="metric-label">All Leads</div>
+      <div class="metric-val" id="count-all">—</div>
+      <div class="metric-sub">in vault</div>
+    </div>
+    <div class="metric" onclick="filterBy('New', this)" id="m-new">
+      <div class="metric-label">New</div>
+      <div class="metric-val" id="count-new">—</div>
+      <div class="metric-sub">unreviewed</div>
+    </div>
+    <div class="metric" onclick="filterBy('Applied', this)" id="m-applied">
+      <div class="metric-label">Applied</div>
+      <div class="metric-val" id="count-applied">—</div>
+      <div class="metric-sub">submitted</div>
+    </div>
+    <div class="metric" onclick="filterBy('Interview', this)" id="m-interview">
+      <div class="metric-label">Interviews</div>
+      <div class="metric-val" id="count-interview">—</div>
+      <div class="metric-sub">in progress</div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-row">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="search-input"
+             placeholder="Search title, company, platform..."
+             oninput="renderJobs()"/>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select class="sort-select" id="sort-select" onchange="renderJobs()">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="title">Title A–Z</option>
+        <option value="company">Company A–Z</option>
+      </select>
+      <button class="btn" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table class="jobs-table">
+      <thead>
+        <tr>
+          <th class="col-title">Job Title</th>
+          <th class="col-company">Company</th>
+          <th class="col-platform">Platform</th>
+          <th class="col-week">Week Added</th>
+          <th class="col-salary">Salary</th>
+          <th class="col-status">Status</th>
+          <th class="col-link">Link</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody id="jobs-body">
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div class="empty-icon">⏳</div>
+            Loading your vault...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- NOTES MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Notes</div>
+    <textarea id="modal-textarea" placeholder="Add your notes here..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SUPABASE_URL = "https://qdtnucxuaocvlodlydys.supabase.co";
+const SUPABASE_KEY = "sb_publishable_r8szbAeXZmH5imyllluObw_LMcW3Ggn";
+const TABLE        = "jobs_tracker";
+
+// ============================================================
+// STATE
+// ============================================================
+let allJobs    = [];
+let curFilter  = 'all';
+let editingJob = null;
+
+// ============================================================
+// SUPABASE
+// ============================================================
+function sbHeaders() {
+  return {
+    "apikey":        SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type":  "application/json",
+    "Prefer":        "return=minimal"
+  };
+}
+
+async function fetchAllJobs() {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=date_applied.desc&limit=500`,
+    { headers: sbHeaders() }
+  );
+  return r.json();
+}
+
+async function patchJob(id, updates) {
+  await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${id}`, {
+    method:  "PATCH",
+    headers: sbHeaders(),
+    body:    JSON.stringify(updates)
+  });
+}
+
+// ============================================================
+// LOAD & RENDER
+// ============================================================
+async function loadJobs() {
+  const icon = document.getElementById('refresh-icon');
+  icon.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    allJobs = await fetchAllJobs();
+    updateMetrics();
+    updateWeeklyProgress();
+    renderJobs();
+    setWeekBadge();
+  } catch(e) {
+    toast("Failed to load jobs — check connection.");
+    console.error(e);
+  }
+
+  icon.textContent = '↻';
+}
+
+function setWeekBadge() {
+  const now   = new Date();
+  const day   = now.getDay();
+  const diff  = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  const label  = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('week-badge').textContent  = 'Week of ' + label;
+  document.getElementById('week-title').textContent  = 'Week of ' + label;
+}
+
+function getThisWeekJobs() {
+  const now    = new Date();
+  const day    = now.getDay();
+  const diff   = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(new Date().setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return allJobs.filter(j => j.date_applied && new Date(j.date_applied) >= monday);
+}
+
+function updateWeeklyProgress() {
+  const week   = getThisWeekJobs();
+  const total  = week.length;
+  const applied    = week.filter(j => j.status === 'Applied').length;
+  const interviews = week.filter(j => j.status === 'Interview').length;
+  const rejected   = week.filter(j => j.status === 'Rejected').length;
+  const newJobs    = week.filter(j => j.status === 'New').length;
+  const worked     = applied + interviews + rejected;
+  const pct        = total > 0 ? Math.round((worked / total) * 100) : 0;
+
+  document.getElementById('w-total').textContent     = total;
+  document.getElementById('w-new').textContent       = newJobs;
+  document.getElementById('w-applied').textContent   = applied;
+  document.getElementById('w-interview').textContent = interviews;
+  document.getElementById('w-rejected').textContent  = rejected;
+  document.getElementById('wp-pct').textContent      = pct + '%';
+  document.getElementById('wp-fill').style.width     = pct + '%';
+
+  let note = '';
+  if (total === 0)       note = 'No leads yet this week — next run is Monday morning.';
+  else if (newJobs === 0) note = 'All leads reviewed this week!';
+  else                   note = `${newJobs} lead${newJobs > 1 ? 's' : ''} still need your attention.`;
+  document.getElementById('wp-note').textContent = note;
+}
+
+function updateMetrics() {
+  document.getElementById('count-all').textContent       = allJobs.length;
+  document.getElementById('count-new').textContent       = allJobs.filter(j => j.status === 'New').length;
+  document.getElementById('count-applied').textContent   = allJobs.filter(j => j.status === 'Applied').length;
+  document.getElementById('count-interview').textContent = allJobs.filter(j => j.status === 'Interview').length;
+}
+
+function filterBy(filter, el) {
+  curFilter = filter;
+  document.querySelectorAll('.metric').forEach(m => m.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderJobs();
+}
+
+function renderJobs() {
+  const body      = document.getElementById('jobs-body');
+  const query     = document.getElementById('search-input').value.toLowerCase();
+  const sortBy    = document.getElementById('sort-select').value;
+
+  let list = curFilter === 'all' ? [...allJobs] : allJobs.filter(j => j.status === curFilter);
+
+  if (query) {
+    list = list.filter(j =>
+      (j.job_title || '').toLowerCase().includes(query) ||
+      (j.company   || '').toLowerCase().includes(query) ||
+      (j.platform  || '').toLowerCase().includes(query)
+    );
+  }
+
+  list.sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.date_applied) - new Date(a.date_applied);
+    if (sortBy === 'oldest') return new Date(a.date_applied) - new Date(b.date_applied);
+    if (sortBy === 'title')  return (a.job_title||'').localeCompare(b.job_title||'');
+    if (sortBy === 'company') return (a.company||'').localeCompare(b.company||'');
+    return 0;
+  });
+
+  if (!list.length) {
+    body.innerHTML = `
+      <tr><td colspan="8" class="empty-state">
+        <div class="empty-icon">📭</div>
+        No jobs match this filter.
+        <div class="empty-sub">Try a different filter or run the weekly hunt script.</div>
+      </td></tr>`;
+    return;
+  }
+
+  body.innerHTML = list.map(j => {
+    const badgeClass = { New:'b-new', Applied:'b-applied', Interview:'b-interview', Rejected:'b-rejected' }[j.status] || 'b-new';
+    const date       = j.date_applied ? new Date(j.date_applied).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
+    const salary     = j.salary_range && j.salary_range !== 'N/A' ? j.salary_range : '—';
+    const hasNotes   = j.notes && !j.notes.includes('Auto-sourced') && !j.notes.includes('Automated lead');
+    const noteIcon   = hasNotes ? '📝' : '＋';
+    return `<tr>
+      <td class="col-title" style="font-weight:500;color:var(--crimson-dark);" title="${j.job_title||''}">${j.job_title||'—'}</td>
+      <td class="col-company" title="${j.company||''}">${j.company||'—'}</td>
+      <td class="col-platform" style="color:var(--text-muted);font-size:12px;" title="${j.platform||''}">${j.platform||'—'}</td>
+      <td class="col-week" style="color:var(--text-muted);font-size:12px;">${date}</td>
+      <td class="col-salary" style="color:var(--text-muted);font-size:12px;">${salary}</td>
+      <td class="col-status">
+        <select class="status-select" onchange="updateStatus(${j.id}, this.value)">
+          ${['New','Applied','Interview','Rejected'].map(s =>
+            `<option value="${s}"${j.status===s?' selected':''}>${s}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td class="col-link"><a href="${j.job_url||'#'}" target="_blank" class="link-btn" title="Open job listing">→</a></td>
+      <td class="col-notes" style="text-align:center;">
+        <span style="cursor:pointer;font-size:14px;" onclick="openNotes(${j.id})" title="${hasNotes ? 'Edit notes' : 'Add notes'}">${noteIcon}</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+async function updateStatus(id, status) {
+  await patchJob(id, { status });
+  const job = allJobs.find(j => j.id === id);
+  if (job) job.status = status;
+  updateMetrics();
+  updateWeeklyProgress();
+  toast('Status → ' + status);
+}
+
+function openNotes(id) {
+  editingJob = allJobs.find(j => j.id === id);
+  if (!editingJob) return;
+  const currentNotes = (editingJob.notes || '').replace('Auto-sourced | ', '').replace(/Week of .+/, '').trim();
+  const autoNote     = editingJob.notes && editingJob.notes.includes('Week of') ?
+    editingJob.notes.match(/Week of .+/)?.[0] || '' : '';
+  document.getElementById('modal-title').textContent = editingJob.job_title || 'Notes';
+  document.getElementById('modal-textarea').value    = currentNotes.includes('Automated lead') || currentNotes.includes('Auto-sourced') ? '' : currentNotes;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function saveNotes() {
+  if (!editingJob) return;
+  const notes = document.getElementById('modal-textarea').value.trim();
+  const weekMatch = (editingJob.notes || '').match(/Week of .+/);
+  const weekPart  = weekMatch ? ' | ' + weekMatch[0] : '';
+  const finalNote = notes ? notes + weekPart : 'Auto-sourced' + weekPart;
+  await patchJob(editingJob.id, { notes: finalNote });
+  editingJob.notes = finalNote;
+  closeModal();
+  renderJobs();
+  toast('Notes saved.');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingJob = null;
+}
+
+function exportCSV() {
+  const list = curFilter === 'all' ? allJobs : allJobs.filter(j => j.status === curFilter);
+  if (!list.length) { toast('No jobs to export.'); return; }
+  const headers = ['Job Title','Company','Platform','Status','Date Added','Salary','URL','Notes'];
+  const rows = list.map(j => [
+    j.job_title, j.company, j.platform, j.status,
+    j.date_applied ? new Date(j.date_applied).toLocaleDateString() : '',
+    j.salary_range, j.job_url, j.notes
+  ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `integrity-scout-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exported.');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadJobs();
+</script>
+</body>
+</html>
